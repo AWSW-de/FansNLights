@@ -35,9 +35,14 @@ Select the "NODEMCU-32S" as the ESP32 board to upload the code:
 <hr>
 
 Wireing:
-Select the "NODEMCU-32S" as the ESP32 board to upload the code:
+
+Schematic:
 <img src="./Wiring/Wiring_Schematic.png">
+
+Bread board PCB layout:
 <img src="./Wiring/Wiring_PCB-Layout.png">
+
+Connection table:
 <img src="./Wiring/Wireing_Connection_Table.png">
 
 <hr>
