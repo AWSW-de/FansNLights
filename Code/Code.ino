@@ -87,7 +87,7 @@
 // ###########################################################################################################################################
 // # Code vesion:
 // ###########################################################################################################################################
-String CodeVersion = "1.0.0";
+String CodeVersion = "1.5.0";
 
 
 // ###########################################################################################################################################
@@ -108,8 +108,8 @@ String CHAT_ID = "1234512345";
 String chat_id = CHAT_ID;
 WiFiClientSecure secured_client;
 UniversalTelegramBot bot(BOTtoken, secured_client);
-unsigned long bot_lasttime;           // last time messages' scan has been done
-const unsigned long BOT_MTBS = 1000;  // mean time between scan messages --> 5s delay because of GUI stability issues at 1s
+unsigned long bot_lasttime;          // last time messages' scan has been done
+const unsigned long BOT_MTBS = 500;  // mean time between scan messages --> 5s delay because of GUI stability issues at 1s
 // BME280:
 Adafruit_BME280 bme;
 float temp, hum;
@@ -148,6 +148,7 @@ void setup() {
   strip.begin();                                      // Init the LEDs
   strip.show();                                       // Init the LEDs --> Set them all to OFF
   strip.setBrightness(intensityLEDs);                 // Set LED brightness
+  setLEDs(255, 255, 255, 0, 0, 1);                    // White
   delay(3000);                                        // Wait 3 seconds for the init of the serial port
   for (int i = 1; i <= 10; i++) Serial.println(" ");  // Generate some empty lines for better reading of the start sequence
   Serial.println("#######################################################");
@@ -1842,7 +1843,7 @@ void WIFI_SETUP() {
     WiFiConfigEmpty = true;
   }
   if (WiFiConfigEmpty == true) {
-    setLEDs(0, 255, 255, 0, 0, 1);  // Cyan
+    setLEDs(255, 255, 255, 0, 0, 1);  // White
     Serial.println("Show SET WIFI...");
     for (int y = 0; y <= 3; y++) {
       lc.setChar(y, 7, 'S', false);
@@ -1863,7 +1864,7 @@ void WIFI_SETUP() {
     WiFi.begin((const char*)WIFIssid.c_str(), (const char*)WIFIpass.c_str());
     Serial.println("Connecting to WiFi " + String(WIFIssid));
     while (WiFi.status() != WL_CONNECTED) {
-      setLEDs(0, 0, 255, 0, 0, 1);  // Blue
+      setLEDs(255, 255, 255, 0, 0, 1);  // White
       // Display Process:
       for (int y = 7; y >= 0; y--) {
         lc.setChar(0, 7, ' ', false);
@@ -1891,7 +1892,7 @@ void WIFI_SETUP() {
       Serial.print(" of maximum ");
       Serial.println(maxWiFiconnctiontries);
       if (tryCount >= maxWiFiconnctiontries - 5) {
-        setLEDs(255, 0, 0, 0, 0, 1);  // Red
+        setLEDs(255, 255, 255, 0, 0, 1);  // White
         // Display Process:
         lc.clearMatrix();
         delay(1000);
@@ -1946,7 +1947,7 @@ void WIFI_SETUP() {
       }
       delay(1000);
       setLEDs(0, 0, 0, 0, 0, 1);  // LEDs off
-      delay(1000);
+      delay(500);
     }
     Serial.println(" ");
     WiFIsetup = true;
@@ -1956,7 +1957,7 @@ void WIFI_SETUP() {
     Serial.println("DNS: " + WiFi.dnsIP().toString());
     Serial.println("GW: " + WiFi.gatewayIP().toString());
     Serial.println("ESP32 hostname: " + String(WiFi.getHostname()));
-    setLEDs(0, 255, 0, 0, 0, 1);  // Green
+    setLEDs(255, 255, 255, 0, 0, 1);  // White
     // Display Process:
     lc.clearMatrix();
     delay(250);
