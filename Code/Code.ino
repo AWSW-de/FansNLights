@@ -87,7 +87,7 @@
 // ###########################################################################################################################################
 // # Code vesion:
 // ###########################################################################################################################################
-String CodeVersion = "1.5.0";
+String CodeVersion = "1.7.5";
 
 
 // ###########################################################################################################################################
@@ -118,7 +118,9 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMPIXELS, LEDPIN, NEO_GRB + NEO_KHZ
 int redVal, greenVal, blueVal;
 uint16_t color_LEDs;
 // Network / Telegram / PrusaConnect:
-int intensityLEDs, intensity7Seg, useshowip, usePrusaConnnect, useTelegram, setLEDonStart, checkLEDs, checkFANs, updatemode, useCorFtemp, MIN_TEMP, MAX_TEMP, MIN_FAN_SPEED, logoutput;
+int intensityLEDs, intensity7Seg, useshowip, usePrusaConnnect, setLEDonStart, checkLEDs, checkFANs, updatemode, useCorFtemp, MIN_TEMP, MAX_TEMP, MIN_FAN_SPEED, logoutput;
+int useTelegram = 0;
+int useWiFi = 0;
 String printer1, printer2, TelegramName;
 // Fans:
 int SpeedForAllFans;
@@ -230,7 +232,7 @@ void setup() {
   checkBME280();                           // BME280 init
   if (checkFANs == 1) checkFANsOnStart();  // Check fans on startup
   if (fanerror == 0) {
-    WIFI_SETUP();  // WiFi setup
+    if (useWiFi == 1) WIFI_SETUP();  // WiFi setup
     // Telegram:
     if (useTelegram == 1) {                                 // Use Telegram support and send initial message after startup
       secured_client.setCACert(TELEGRAM_CERTIFICATE_ROOT);  // Add root certificate for api.telegram.org
@@ -239,6 +241,8 @@ void setup() {
       bot.sendMessage(CHAT_ID.c_str(), TelegramName + " - Version: " + CodeVersion + " startup finished " + "\xF0\x9F\x98\x8A", "");
       Serial.println("###############################################");
     }
+
+    updatenow = true;  // Update the display 1x after startup
 
     // Set LEDs to ON or OFF on startup:
     if (setLEDonStart == 1) {
@@ -254,67 +258,67 @@ void setup() {
 // # Loop function during runtime:
 // ###########################################################################################################################################
 void loop() {
-  if (WiFIsetup == true) {  // Check for WIFI setup
-    // Buttons:
-    // ########
-    button1.loop();  // MUST call the loop() function first
-    button2.loop();  // MUST call the loop() function first
-    // Get button state after debounce
-    int button1_state = button1.getState();  // the state after debounce
-    int button2_state = button2.getState();  // the state after debounce
-    // Button 1 actions:
-    if (button1.isPressed()) {
-      if (logoutput == 1) Serial.println("The button 1 'ON' is pressed");
-      setLEDs(redVal, greenVal, blueVal, 0, 0, 1);  // ON
-    }
-    if (logoutput == 1) {
-      if (button1.isReleased()) Serial.println("The button 1 'ON' is released");
-    }
-    // Button 2 actions:
-    if (button2.isPressed()) {
-      if (logoutput == 1) Serial.println("The button 2 'OFF' is pressed");
-      setLEDs(0, 0, 0, 0, 0, 1);  // OFF
-    }
-    if (logoutput == 1) {
-      if (button2.isReleased()) Serial.println("The button 2 'OFF' is released");
-    }
+  // if (WiFIsetup == true) {  // Check for WIFI setup
+  // Buttons:
+  // ########
+  button1.loop();  // MUST call the loop() function first
+  button2.loop();  // MUST call the loop() function first
+  // Get button state after debounce
+  int button1_state = button1.getState();  // the state after debounce
+  int button2_state = button2.getState();  // the state after debounce
+  // Button 1 actions:
+  if (button1.isPressed()) {
+    if (logoutput == 1) Serial.println("The button 1 'ON' is pressed");
+    setLEDs(redVal, greenVal, blueVal, 0, 0, 1);  // ON
+  }
+  if (logoutput == 1) {
+    if (button1.isReleased()) Serial.println("The button 1 'ON' is released");
+  }
+  // Button 2 actions:
+  if (button2.isPressed()) {
+    if (logoutput == 1) Serial.println("The button 2 'OFF' is pressed");
+    setLEDs(0, 0, 0, 0, 0, 1);  // OFF
+  }
+  if (logoutput == 1) {
+    if (button2.isReleased()) Serial.println("The button 2 'OFF' is released");
+  }
 
-    // Other tasks:
-    // ############
-    if (fanerror == 0) {  // Just start to work if fan test was OK
-      if (millis() - bot_lasttime > BOT_MTBS) {
+  // Other tasks:
+  // ############
+  if (fanerror == 0) {  // Just start to work if fan test was OK
+    if (millis() - bot_lasttime > BOT_MTBS) {
 
-        if (updatedevice == true) {                     // Allow display updates (normal usage)
-          if (changedvalues == true) setFlashValues();  // Write settings to flash
+      if (updatedevice == true) {                                         // Allow display updates (normal usage)
+        if ((changedvalues == true) && (useWiFi == 1)) setFlashValues();  // Write settings to flash
 
-          // Temperature and humidity:
-          getTempHum();  // Get the temperature and humidity
+        // Temperature and humidity:
+        getTempHum();  // Get the temperature and humidity
 
-          // Display data:
-          writeOn7Segment();  // Show data on the display
+        // Display data:
+        writeOn7Segment();  // Show data on the display
 
-          // Control fans:
-          setANDgetFanSpeeds();  // Set and get fan speed
+        // Control fans:
+        setANDgetFanSpeeds();  // Set and get fan speed
 
-          // Web server:
-          dnsServer.processNextRequest();  // Update the web server
+        // Web server:
+        if (useWiFi == 1) dnsServer.processNextRequest();  // Update the web server
 
-          // Telegram:
-          if (useTelegram == 1) {  // Telegram chat action command usage
-            int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-            while (numNewMessages) {
-              handleNewMessages(numNewMessages);
-              numNewMessages = bot.getUpdates(bot.last_message_received + 1);
-            }
+        // Telegram:
+        if (useTelegram == 1) {  // Telegram chat action command usage
+          int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
+          while (numNewMessages) {
+            handleNewMessages(numNewMessages);
+            numNewMessages = bot.getUpdates(bot.last_message_received + 1);
           }
         }
-
-        if (updatemode == 1) otaserver.handleClient();  // ESP32 OTA update
-
-        bot_lasttime = millis();
       }
+
+      if ((updatemode == 1) && (useWiFi == 1)) otaserver.handleClient();  // ESP32 OTA update
+
+      bot_lasttime = millis();
     }
   }
+  // }
 }
 
 
@@ -511,17 +515,17 @@ void getFlashValues() {
   redVal = preferences.getUInt("redVal", 255);
   greenVal = preferences.getUInt("greenVal", 255);
   blueVal = preferences.getUInt("blueVal", 255);
-  setLEDonStart = preferences.getUInt("setLEDonStart", 0);
+  setLEDonStart = preferences.getUInt("setLEDonStart", 1);
   checkLEDs = preferences.getUInt("checkLEDs", 0);
   useCorFtemp = preferences.getUInt("useCorFtemp", 0);
   updatemode = preferences.getUInt("updatemode", 1);
-  checkFANs = preferences.getUInt("checkFANs", 0);
-  intensityLEDs = preferences.getUInt("intensityLEDs", 32);
+  checkFANs = preferences.getUInt("checkFANs", 1);
+  intensityLEDs = preferences.getUInt("intensityLEDs", 128);
   intensity7Seg = preferences.getUInt("intensity7Seg", 4);
   useshowip = preferences.getUInt("useshowip", 1);
   usePrusaConnnect = preferences.getUInt("usePrusaConnect", 0);
-  printer1 = preferences.getString("printer1", "Prusa MK3.5 - 2019");
-  printer2 = preferences.getString("printer2", "Prusa MK3.5 - 2021");
+  printer1 = preferences.getString("printer1", "Prusa MK4S - 2019");
+  printer2 = preferences.getString("printer2", "Prusa MK4S - 2024");
   useTelegram = preferences.getUInt("useTelegram", 0);
   TelegramName = preferences.getString("TelegramName", "AWSW FANS N LIGHTS");
   MIN_FAN_SPEED = preferences.getUInt("MIN_FAN_SPEED", 20);
